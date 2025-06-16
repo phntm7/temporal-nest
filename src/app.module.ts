@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TemporalModule } from 'nestjs-temporal-core';
+import { TemporalModule, WORKER_PRESETS } from 'nestjs-temporal-core';
 import { OrderActivities } from './activities/order.activities';
 import { OrderService } from './services/order.service';
-// import * as path from 'path';
-import { OrderController } from './workflows';
+import * as path from 'path';
+// import { OrderWorkflow } from './workflows/order.workflow';
 
 @Module({
   imports: [
@@ -16,14 +16,17 @@ import { OrderController } from './workflows';
       },
       taskQueue: 'orders-task-queue',
       worker: {
-        workflowsPath: './dist/workflows',
+        workflowsPath: path.join(__dirname, 'workflows'),
         activityClasses: [OrderActivities],
         autoStart: true,
+        workerOptions: WORKER_PRESETS.DEVELOPMENT,
       },
       isGlobal: true,
     }),
   ],
-  controllers: [AppController, OrderController],
+  controllers: [AppController],
   providers: [AppService, OrderService],
 })
 export class AppModule {}
+
+console.log(path.join(__dirname, 'workflows'));

@@ -6,7 +6,6 @@ import {
 } from 'nestjs-temporal-core';
 import { proxyActivities } from '@temporalio/workflow';
 import type { Order, OrderItem } from '../activities/order.activities';
-import { Controller } from '@nestjs/common';
 
 interface OrderActivities {
   validateOrder(order: Order): Promise<boolean>;
@@ -36,9 +35,8 @@ const activities = proxyActivities<OrderActivities>({
   },
 });
 
-@Controller()
 @WorkflowController({ taskQueue: 'orders' })
-export class OrderController {
+export class OrderWorkflow {
   private status = 'pending';
   private reservationId?: string;
   private paymentId?: string;
