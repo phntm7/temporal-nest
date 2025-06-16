@@ -1,10 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { TemporalService } from 'nestjs-temporal-core';
+import { InjectTemporalClient } from 'nestjs-temporal';
+import { WorkflowClient } from '@temporalio/client';
 import { Order } from '../activities/order.activities';
+import {
+  processOrder,
+  getStatusQuery,
+  getTrackingNumberQuery,
+  getErrorQuery,
+  cancelOrderSignal,
+} from '../workflows/order.workflow';
 
 @Injectable()
 export class OrderService {
-  constructor(private readonly temporalService: TemporalService) {}
+  constructor(
+    @InjectTemporalClient()
+    private readonly temporalClient: WorkflowClient,
+  ) {}
 
   async createOrder(
     order: Order,
@@ -12,19 +23,17 @@ export class OrderService {
     const workflowId = `order-${order.orderId}`;
 
     try {
-      const { result } = await this.temporalService.startWorkflow(
-        'processOrder',
-        [order],
-        {
-          workflowId,
-          searchAttributes: {
-            'customer-id': order.customerId,
-            'order-amount': order.totalAmount,
-          },
-        },
-      );
+      const handle = await this.temporalClient.start(processOrder, {
+        args: [order],
+        taskQueue: 'orders-task-queue',
+        workflowId,
+        // searchAttributes: {
+        //   customerId: [order.customerId],
+        //   totalAmount: [order.totalAmount],
+        // },
+      });
 
-      const trackingNumber = await (result as Promise<string>);
+      const trackingNumber = await handle.result();
       return { workflowId, trackingNumber };
     } catch (error) {
       console.error(`Order processing failed for ${order.orderId}:`, error);
@@ -34,7 +43,8 @@ export class OrderService {
 
   async cancelOrder(orderId: string): Promise<void> {
     const workflowId = `order-${orderId}`;
-    await this.temporalService.signalWorkflow(workflowId, 'cancelOrder');
+    const handle = this.temporalClient.getHandle(workflowId);
+    await handle.signal(cancelOrderSignal);
   }
 
   async getOrderStatus(orderId: string): Promise<{
@@ -43,15 +53,13 @@ export class OrderService {
     error?: string;
   }> {
     const workflowId = `order-${orderId}`;
+    const handle = this.temporalClient.getHandle(workflowId);
 
     try {
       const [status, trackingNumber, error] = await Promise.all([
-        this.temporalService.queryWorkflow<string>(workflowId, 'getStatus'),
-        this.temporalService.queryWorkflow<string>(
-          workflowId,
-          'getTrackingNumber',
-        ),
-        this.temporalService.queryWorkflow<string>(workflowId, 'getError'),
+        handle.query(getStatusQuery),
+        handle.query(getTrackingNumberQuery),
+        handle.query(getErrorQuery),
       ]);
 
       return { status, trackingNumber, error };

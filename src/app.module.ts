@@ -1,32 +1,26 @@
 import { Module } from '@nestjs/common';
+import { TemporalModule } from 'nestjs-temporal';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TemporalModule, WORKER_PRESETS } from 'nestjs-temporal-core';
-import { OrderActivities } from './activities/order.activities';
-import { OrderService } from './services/order.service';
-import * as path from 'path';
-// import { OrderWorkflow } from './workflows/order.workflow';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
-    TemporalModule.register({
-      connection: {
+    TemporalModule.registerWorker({
+      connectionOptions: {
+        // CHANGE HERE
         address: 'localhost:7233',
-        namespace: 'default',
       },
-      taskQueue: 'orders-task-queue',
-      worker: {
-        workflowsPath: path.join(__dirname, 'workflows'),
-        activityClasses: [OrderActivities],
-        autoStart: true,
-        workerOptions: WORKER_PRESETS.DEVELOPMENT,
+      workerOptions: {
+        taskQueue: 'orders-task-queue',
+        workflowsPath: require.resolve('./workflows'),
       },
-      isGlobal: true,
     }),
+
+    TemporalModule.registerClient(),
+    OrderModule,
   ],
   controllers: [AppController],
-  providers: [AppService, OrderService],
+  providers: [AppService],
 })
 export class AppModule {}
-
-console.log(path.join(__dirname, 'workflows'));

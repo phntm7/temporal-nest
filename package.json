@@ -27,6 +27,7 @@
     "@temporalio/client": "^1.11.8",
     "@temporalio/worker": "^1.11.8",
     "@temporalio/workflow": "^1.11.8",
+    "nestjs-temporal": "github:phntm7/nestjs-temporal#main",
     "nestjs-temporal-core": "^3.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"

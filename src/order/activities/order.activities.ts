@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Activity, ActivityMethod } from 'nestjs-temporal-core';
+import { Activities, Activity } from 'nestjs-temporal';
 import { log } from '@temporalio/activity';
 
 export interface OrderItem {
@@ -16,10 +16,29 @@ export interface Order {
   status: string;
 }
 
+export interface IOrderActivities {
+  validateOrder(order: Order): Promise<boolean>;
+  checkInventory(items: OrderItem[]): Promise<boolean>;
+  reserveInventory(items: OrderItem[]): Promise<string>;
+  processPayment(
+    orderId: string,
+    amount: number,
+    customerId: string,
+  ): Promise<string>;
+  fulfillOrder(orderId: string, items: OrderItem[]): Promise<string>;
+  sendOrderConfirmation(
+    orderId: string,
+    customerId: string,
+    trackingNumber: string,
+  ): Promise<void>;
+  compensateInventory(reservationId: string): Promise<void>;
+  refundPayment(paymentId: string): Promise<void>;
+}
+
 @Injectable()
-@Activity()
-export class OrderActivities {
-  @ActivityMethod()
+@Activities()
+export class OrderActivities implements IOrderActivities {
+  @Activity()
   async validateOrder(order: Order): Promise<boolean> {
     log.info(`Validating order ${order.orderId}`);
     // Validate order data, customer info, etc.
@@ -27,7 +46,7 @@ export class OrderActivities {
     return order.items.length > 0 && order.totalAmount > 0;
   }
 
-  @ActivityMethod()
+  @Activity()
   async checkInventory(items: OrderItem[]): Promise<boolean> {
     console.info('Checking inventory for items:', items);
     // Fail in 50% of cases to simulate inventory issues
@@ -44,7 +63,7 @@ export class OrderActivities {
     return true;
   }
 
-  @ActivityMethod()
+  @Activity()
   async reserveInventory(items: OrderItem[]): Promise<string> {
     console.info('Reserving inventory for items:', items);
     // Reserve items in inventory system
@@ -59,7 +78,7 @@ export class OrderActivities {
     return reservationId;
   }
 
-  @ActivityMethod()
+  @Activity()
   async processPayment(
     orderId: string,
     amount: number,
@@ -80,7 +99,7 @@ export class OrderActivities {
     return paymentId;
   }
 
-  @ActivityMethod()
+  @Activity()
   async fulfillOrder(orderId: string, items: OrderItem[]): Promise<string> {
     log.info(`Fulfilling order ${orderId}`, { items });
 
@@ -95,7 +114,7 @@ export class OrderActivities {
     return trackingNumber;
   }
 
-  @ActivityMethod()
+  @Activity()
   async sendOrderConfirmation(
     orderId: string,
     customerId: string,
@@ -113,7 +132,7 @@ export class OrderActivities {
     // Send email with tracking information
   }
 
-  @ActivityMethod()
+  @Activity()
   async compensateInventory(reservationId: string): Promise<void> {
     if (Math.random() < 0.5) {
       throw new Error('Compensation failed');
@@ -125,7 +144,7 @@ export class OrderActivities {
     // Release reserved inventory
   }
 
-  @ActivityMethod()
+  @Activity()
   async refundPayment(paymentId: string): Promise<void> {
     log.info(`Refunding payment ${paymentId}`);
 
