@@ -7,8 +7,9 @@ export class OrderController {
 
   @Post()
   createOrder() {
+    const orderId = Math.random().toString(36).substring(2, 9);
     return this.orderService.createOrder({
-      orderId: '12345',
+      orderId: orderId,
       customerId: 'cust-001',
       items: [
         { productId: 'prod-001', quantity: 2, price: 50 },

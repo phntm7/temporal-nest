@@ -6,18 +6,11 @@ import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
-    TemporalModule.registerWorker({
-      connectionOptions: {
-        // CHANGE HERE
-        address: 'localhost:7233',
-      },
-      workerOptions: {
-        taskQueue: 'orders-task-queue',
-        workflowsPath: require.resolve('./workflows'),
+    TemporalModule.registerClient({
+      connection: {
+        address: '10.0.4.74:7233',
       },
     }),
-
-    TemporalModule.registerClient(),
     OrderModule,
   ],
   controllers: [AppController],

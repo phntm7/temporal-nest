@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Activities, Activity } from 'nestjs-temporal';
 import { log } from '@temporalio/activity';
+import { MailService } from 'src/mail/mail.service';
 
 export interface OrderItem {
   productId: string;
@@ -38,11 +39,14 @@ export interface IOrderActivities {
 @Injectable()
 @Activities()
 export class OrderActivities implements IOrderActivities {
+  constructor(private readonly mailService: MailService) {}
+
   @Activity()
   async validateOrder(order: Order): Promise<boolean> {
     log.info(`Validating order ${order.orderId}`);
     // Validate order data, customer info, etc.
     await new Promise((resolve) => setTimeout(resolve, 10000)); // Simulate validation time
+    this.mailService.sendMail();
     return order.items.length > 0 && order.totalAmount > 0;
   }
 
@@ -60,6 +64,8 @@ export class OrderActivities implements IOrderActivities {
         return false;
       }
     }
+    this.mailService.sendMail();
+
     return true;
   }
 
@@ -75,6 +81,8 @@ export class OrderActivities implements IOrderActivities {
 
     const reservationId = `res_${Date.now()}`;
     // Implementation...
+    this.mailService.sendMail();
+
     return reservationId;
   }
 
@@ -96,6 +104,8 @@ export class OrderActivities implements IOrderActivities {
     // Process payment through payment gateway
     const paymentId = `pay_${Date.now()}`;
     // Implementation...
+    this.mailService.sendMail();
+
     return paymentId;
   }
 
@@ -111,6 +121,8 @@ export class OrderActivities implements IOrderActivities {
     // Create shipping label, pack items, etc.
     const trackingNumber = `track_${Date.now()}`;
     // Implementation...
+    this.mailService.sendMail();
+
     return trackingNumber;
   }
 
